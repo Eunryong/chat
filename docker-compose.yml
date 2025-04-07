@@ -1,0 +1,47 @@
+services:
+    # Flutter 웹 앱
+    web-client:
+        build:
+            context: ./client
+            dockerfile: Dockerfile
+        ports:
+            - '8080:80'
+        depends_on:
+            - ai-service
+            - webrtc-server
+
+    # AI 서비스
+    ai-service:
+        build:
+            context: ./server/ai-service
+            dockerfile: Dockerfile
+        ports:
+            - '8000:8000'
+        environment:
+            - LLM_TYPE=local
+            - MODEL_PATH=/app/models/llama-2-7b-chat.gguf
+        volumes:
+            - ./server/ai-service:/app
+            - ./models:/app/models
+        depends_on:
+            - webrtc-server
+
+    # WebRTC 서버
+    webrtc-server:
+        build:
+            context: ./server/webrtc-server
+            dockerfile: Dockerfile
+        ports:
+            - '8088:8088'
+            - '8188:8188'
+            - '8089:8089'
+        volumes:
+            - ./server/webrtc-server/config:/etc/janus
+        environment:
+            - JANUS_HOST=0.0.0.0
+            - JANUS_PORT=8088
+            - JANUS_WS_PORT=8188
+            - JANUS_ADMIN_PORT=8089
+
+volumes:
+    models:
